@@ -1,0 +1,6 @@
+/__pycache__
+/env
+raw_blocks.json
+/output
+/**/*.csv
+/**/*.json
