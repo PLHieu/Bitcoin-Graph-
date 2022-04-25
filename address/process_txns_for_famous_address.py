@@ -179,4 +179,5 @@ def test():
     process_famous_address({"address": "1BNRxRGV7CfRwGHRkz5NFEbYeaZvT58Cxj"})
 
 # test()
+print("Starting")
 queue.consume_mgo_queue("queue_famous_address", process_famous_address)
