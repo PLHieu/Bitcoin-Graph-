@@ -147,7 +147,7 @@ def consume_mgo_queue(queue_name, callback_function, on_process_done=None, on_pr
             count_time = datetime.now()
             data = item['data']
             logs = item.get("logs")
-            if logs is not None and len(logs) > 5:
+            if logs is not None and len(logs) > 2:
                 queue.update_one(
                     {'_id': item['_id']},
                     {'$set': {'process_by': "PROCESS TOO MANY TIMES", 'updated_time': datetime.now()}}
