@@ -270,8 +270,6 @@ def process_block(data):
     result =  json.loads(response.text)
     # res = col_raw_block.replace_one({'block_index': result.get("block_index")}, result, upsert=True)
     for txn in result.get("tx", []):
-        if txn.get("hash") != "9b511737919d514c3214161183a6fbec54d831e25f53a83af78115b0d387a91a":
-            continue
         process_txn_v2(txn)
 
 def test():
@@ -280,5 +278,5 @@ def test():
 # test()
 # print("Starting")
 # queue.consume_mgo_queue("queue_famous_address", process_famous_address)
-# queue.consume_mgo_queue("raw_blocks", process_block)
-process_block({"block": 518584})
+queue.consume_mgo_queue("queue_raw_block", process_block)
+# process_block({"block": 518584})

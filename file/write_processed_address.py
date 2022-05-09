@@ -2,9 +2,24 @@ from db import db_local
 import json
 import pymongo
 
+sys.path.append(os.path.abspath(os.path.abspath(os.path.dirname("__file__"))))
+
+from utils.db import connection_database
+
+db = connection_database({
+    'db_user': "hieu",
+    'db_pass': "password",
+    'db_host': ["127.0.0.1"],
+    'port': "27017",
+    'db_name': "khoaluan",
+    'db_auth': "admin",
+})
+
+col_group_mapping = 
+
 
 # load processed_address fro db and write into csv file
-with open('clusters_address.json','a') as file:
+with open('group_mapping.json','a') as file:
 	total = 0
 	limit = 200
 	while True:

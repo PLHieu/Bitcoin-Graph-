@@ -4,9 +4,11 @@ import signal
 import pymongo
 import sys
 import os
+import time
 
 sys.path.append(os.path.abspath(os.path.abspath(os.path.dirname("__file__"))))
 from utils.db import connection_database
+from mgoqueue import queue
 
 db = connection_database({
     'db_user': "hieu",
@@ -17,8 +19,9 @@ db = connection_database({
     'db_auth': "admin",
 })
 col_famous_address = db['famous_address']
-col_famous_address_txns = db['famous_address_txns']
-col_famous_inoutflow = db['famous_inoutflow']
+col_famous_inoutflow_v2 = db['famous_inoutflow_v2']
+col_famous_address_txns_v2 = db['famous_address_txns_v2']
+col_agg_inoutflow_v2 = db['agg_inoutflow_v2']
 
 # received_signal = False
 
@@ -35,47 +38,47 @@ col_famous_inoutflow = db['famous_inoutflow']
 
 
 def init_queue():
-    list_country = col_famous_address.distinct("country")
-    list_exchange = col_famous_address.distinct("exchange")
-    for exchange in list_exchange:
-        for country in list_country:
-            data = {
-                "country": country,
-                "exchange": exchange,
-            }
-            queue.push_mgo_queue("country_exchange", data, f"{exchange}-{country}", [exchange, country])
-            print(f"{exchange}-{country}")
+    start_block=134900
+    end_block=346522
+
+    for i in range(start_block, end_block+1):
+        data = {"block": i}
+        queue.push_mgo_queue("queue_aggregate_inoutflow", data, f"{i}", [ i])
+        print(f"{i}")            
 
 
-def process_group(data):
-    exchange = data.get("exchange")
-    country = data.get("country")
-    print(f"---------------------Starting processing ({exchange}-{country})---------------------------")
-    offset = 0
-    limit = 100
-    while True:
-        adds = list(col_famous_address.find({"exchange": exchange, "country": country}).limit(limit).skip(offset))
-        if len(adds) == 0:
-            break
-        for add in adds:
-            generate_agg_inoutflow(exchange, country, add)
-            print(f"---------------------Done address {add}---------------------------")
-        offset = offset + limit
-    print(f"---------------------Finish processing ({exchange}-{country})---------------------------")
 
-
-def generate_agg_inoutflow(exchange, country, add):
+def generate_agg_inoutflow(block):
     offset = 0
     limit = 100
 
     while True:
-        filter = {"address": add}
-        items = list(col_famous_inoutflow.find(filter).limit(limit).skip(offset))
+        filter = {"block_index": block}
+        items = list(col_famous_inoutflow_v2.find(filter).limit(limit).skip(offset))
         if len(items) == 0:
             break
         for item in items:
+            # get group of this address
+            res = col_famous_address.find_one({"address": item.get("address")})
+            if res is None:
+                continue
+
+            group = res.get("group")
+            country = res.get("country","")
+            exchange = res.get("exchange","")
+
             time = item.get("time")
-            date = time.strftime("%m/%d/%Y")
-            col_agg_inoutflow.update_one({"exchange": exchange, "country": country, "type": item.get("type")},{"$inc": {date: item.get("amount")}}, upsert=True)
+            date_io = datetime(year=time.year, month=time.month, day=time.day)
+            col_agg_inoutflow_v2.update_one({"group": group, "type": item.get("type"), "date": date_io},{"$inc": {"value": item.get("amount")}}, upsert=True)
         offset = offset + limit
 
+
+def process_agg_inoutflow(data):
+    block = data.get("block")
+    generate_agg_inoutflow(block)
+    time.sleep(0.01)
+    print(f"Done {block}")
+
+queue.consume_mgo_queue("queue_aggregate_inoutflow", process_agg_inoutflow)
+# init_queue()
+# generate_agg_inoutflow(119891)

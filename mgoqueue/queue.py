@@ -37,12 +37,12 @@ def init_queue(db_name):
     if db_name in listDb:
         return listDb[db_name]['queue'], listDb[db_name]['queue_consumed']
     queue = db[db_name]
-    queue.create_index('keys')
-    queue.create_index('unique_key', unique=True)
+    # queue.create_index('keys')
+    # queue.create_index('unique_key', unique=True)
 
     queue_consumed = db[db_name + "_consumed"]
-    queue_consumed.create_index('keys')
-    queue_consumed.create_index("created_time", expireAfterSeconds=604800)
+    # queue_consumed.create_index('keys')
+    # queue_consumed.create_index("created_time", expireAfterSeconds=604800)
 
     listDb[db_name] = {
         'queue': queue,
