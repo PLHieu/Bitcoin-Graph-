@@ -34,11 +34,11 @@ with open('edges.json','a') as file:
 
         if len(edges) == 0:
             break
+        last_id = edges[len(edges)-1].get("_id")
         for edge in edges:
             del edge["_id"]
             file.write(json.dumps(edge))
             file.write('\n')
         print(offset)
         print(last_id)
-        last_id = edges[len(edges)-1].get("_id")
         offset = offset + limit
