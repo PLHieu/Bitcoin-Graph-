@@ -141,7 +141,7 @@ def consume_mgo_queue(queue_name, callback_function, on_process_done=None, on_pr
                                          {'$set': {'process_by': hostname, 'updated_time': datetime.now()}})
 
         if item is None:
-            sleep(0.05)
+            sleep(1)
         else:
             print(f"processing item {item}")
             count_time = datetime.now()

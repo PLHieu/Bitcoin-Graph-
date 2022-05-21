@@ -1,7 +1,12 @@
 /__pycache__
 /env
+/linux-env
 raw_blocks.json
 /output
 /**/*.csv
 /**/*.json
 /**/*.pyc
+/**/*.xml
+/**/*.txt
+/**/*.pdf
+/**/*.cys
