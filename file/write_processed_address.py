@@ -15,7 +15,6 @@ db = connection_database({
     'db_auth': "admin",
 })
 
-col_group_mapping = 
 
 
 # load processed_address fro db and write into csv file

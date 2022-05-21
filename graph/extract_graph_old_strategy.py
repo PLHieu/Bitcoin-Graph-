@@ -30,9 +30,8 @@ db = connection_database({
 
 col_famous_address = db['famous_address']
 col_famous_address_txns_v2 = db['famous_address_txns_v2']
-col_edge = db['edge']
 col_map_add_group = db['map_add_group']
-col_map_group_group = db['map_group_group']
+# col_map_group_group = db['map_group_group']
 col_group_index = db['group_index']
 
 current_group_id = 1
@@ -227,31 +226,31 @@ def get_new_group_id():
     current = col_group_index.find_one_and_update({"status": "current"}, {"$inc": {"index": 1}}, return_document=ReturnDocument.AFTER, upsert=True)
     return current.get("index")
 
-def check_coin_base_txn(txn):
-    input_address = txn.get("inputs")[0].get("prev_out").get("addr", "")
-    if input_address == "":
-        print("--Coinbase---")
-        # Group all output address into one group 
-        new_group_id_outputs = get_new_group_id()
-        outputs = txn.get("out")
-        for i in outputs:        
-            address = i.get("addr", "")
-            if address == "":
-                continue
-             # find for this address that already exist
-            res = col_address.find({"address": address, "group": {"$ne": new_group_id_outputs}})
-            for r in res:
-                map(r.get("group"), new_group_id_outputs)
-            col_address.update_one({"address": address, "group": new_group_id_outputs}, {"$set": {}}, upsert=True)
-        return True
-    return False
+# def check_coin_base_txn(txn):
+#     input_address = txn.get("inputs")[0].get("prev_out").get("addr", "")
+#     if input_address == "":
+#         print("--Coinbase---")
+#         # Group all output address into one group 
+#         new_group_id_outputs = get_new_group_id()
+#         outputs = txn.get("out")
+#         for i in outputs:        
+#             address = i.get("addr", "")
+#             if address == "":
+#                 continue
+#              # find for this address that already exist
+#             res = col_address.find({"address": address, "group": {"$ne": new_group_id_outputs}})
+#             for r in res:
+#                 map(r.get("group"), new_group_id_outputs)
+#             col_address.update_one({"address": address, "group": new_group_id_outputs}, {"$set": {}}, upsert=True)
+#         return True
+#     return False
 
 
-def map(group_from, group_to):
-    l = [group_from, group_to]
-    l.sort()
+# def map(group_from, group_to):
+#     l = [group_from, group_to]
+#     l.sort()
 
-    col_map_group_group.update_one({"group_from": l[0], "group_to": l[1]}, {"$set": {}}, upsert=True)
+#     col_map_group_group.update_one({"group_from": l[0], "group_to": l[1]}, {"$set": {}}, upsert=True)
 
 
 def get_label_address(add):
