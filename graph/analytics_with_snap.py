@@ -70,5 +70,19 @@ G1.SaveEdgeList('mygraph.txt')
 # G1.DrawGViz(snap.gvlDot, "output.png", " ", labels)
 
 
+print("start writing processed_set_edges.csv")
+with open('processed_set_edges.csv','a') as file:
+  with open('mygraph.txt', 'r') as read_obj:
+      i = 0
+      for row in read_obj:
+          if i == 0 or i == 1 or i == 2:
+              i = i+1
+              continue
+          row = row.strip('\n') 
+          pair_grs = row.split('\t')
+          int_pair_grs = [ int(i) for i in pair_grs]
+          file.write(f"{int_pair_grs[0]},{int_pair_grs[1]}\n")
 
+          i = i+1
+print("done writing processed_set_edges.csv")
 

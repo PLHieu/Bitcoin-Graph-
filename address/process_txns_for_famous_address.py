@@ -12,12 +12,10 @@ import time
 import http.client
 import urllib.parse
 import pytz
+import redis
+import copy
 
-conn = http.client.HTTPSConnection("api.scrapingant.com")
-
-headers = {
-    'x-api-key': "44f80c6530024aeb969ad4d29816f1a6"
-}
+r = redis.Redis(host='localhost', port=6379, db=0)
 
 db = connection_database({
     'db_user': "hieu",
@@ -187,14 +185,17 @@ def get_list_txns_chain_so(add):
 
 
 def is_famous_address(address):
-    res = col_famous_address.find_one({"address": address})
-    return res is not None
+    # res = col_famous_address.find_one({"address": address})
+    # return res is not None
+    return r.sismember("famous_address", address)
 
-def process_txn_v2(txn):
+def process_txn_v2(txn, list_txns, list_ios):
     # get time of this transaction 
     time = datetime.fromtimestamp(txn.get("time"), pytz.UTC)
 
-    is_txn_inserted = False
+    # is_txn_inserted = False
+    result_txn = copy.deepcopy(txn)
+    existed_famous_address = set()
 
     # process inouflow
     for input in txn.get("inputs",[]):
@@ -206,15 +207,33 @@ def process_txn_v2(txn):
         if not is_famous_address(address):
             continue
 
-        # update this txn document in db to inclue this address
-        if is_txn_inserted == False:
-            col_famous_address_txns_v2.insert_one(txn)
-            is_txn_inserted = True
+        # # update this txn document in db to inclue this address
+        # if is_txn_inserted == False:
+        #     col_famous_address_txns_v2.insert_one(txn)
+        #     is_txn_inserted = True
 
-        col_famous_address_txns_v2.update_one({"hash": txn.get("hash","")}, {"$push": {"famous_address": address}})
+        ## col_famous_address_txns_v2.update_one({"hash": txn.get("hash","")}, {"$push": {"famous_address": address}})
 
-        # this is outflow
-        row = {
+        existed_famous_address.add(address)
+
+        # # this is outflow
+        # row = {
+        #     "amount": input.get("prev_out").get("value", 0),
+        #     "type": "OUTFLOW",
+        #     "address": address,
+        #     "txn_hash": txn.get("hash"),
+        #     "block_index": txn.get("block_index"),
+        #     "time": time,
+        #     "timestamp": txn.get("time"),
+        # }
+        # filter = {
+        #     "type": "OUTFLOW",
+        #     "address": address,
+        #     "txn_hash": txn.get("hash"),
+        # }
+        # col_famous_inoutflow_v2.replace_one(filter,row, upsert=True)
+        
+        item = {
             "amount": input.get("prev_out").get("value", 0),
             "type": "OUTFLOW",
             "address": address,
@@ -223,12 +242,7 @@ def process_txn_v2(txn):
             "time": time,
             "timestamp": txn.get("time"),
         }
-        filter = {
-            "type": "OUTFLOW",
-            "address": address,
-            "txn_hash": txn.get("hash"),
-        }
-        col_famous_inoutflow_v2.replace_one(filter,row, upsert=True)
+        list_ios.append(item)
     
     for output in txn.get("out"):
         address = output.get("addr",None)
@@ -239,15 +253,38 @@ def process_txn_v2(txn):
         if not is_famous_address(address):
             continue
 
-        # update this txn document in db to inclue this address
-        if is_txn_inserted == False:
-            col_famous_address_txns_v2.insert_one(txn)
-            is_txn_inserted = True
+        # # update this txn document in db to inclue this address
+        # if is_txn_inserted == False:
+        #     col_famous_address_txns_v2.insert_one(txn)
+        #     is_txn_inserted = True
 
-        col_famous_address_txns_v2.update_one({"hash": txn.get("hash","")}, {"$push": {"famous_address": address}})
+        # start = datetime.now(pytz.UTC)
+        # col_famous_address_txns_v2.update_one({"hash": txn.get("hash","")}, {"$push": {"famous_address": address}})
+        # end = datetime.now(pytz.UTC)
+        # print("col_famous_address_txns_v2.update_one", (end-start).total_seconds())
 
-        # this is inflow
-        row = {
+        existed_famous_address.add(address)
+
+        # # this is inflow
+        # row = {
+        #     "amount": output.get("value", ""),
+        #     "type": "INFLOW",
+        #     "address": address,
+        #     "txn_hash": txn.get("hash"),
+        #     "block_index": txn.get("block_index"),
+        #     "time": time,
+        #     "timestamp": txn.get("time"),
+        # }
+        # filter = {
+        #     "type": "INFLOW",
+        #     "address": address,
+        #     "txn_hash": txn.get("hash"),
+        # }
+        # start = datetime.now(pytz.UTC)
+        # col_famous_inoutflow_v2.replace_one(filter,row, upsert=True)
+        # end = datetime.now(pytz.UTC)
+        # print("col_famous_inoutflow_v2.replace_one", (end-start).total_seconds())
+        item = {
             "amount": output.get("value", ""),
             "type": "INFLOW",
             "address": address,
@@ -256,12 +293,11 @@ def process_txn_v2(txn):
             "time": time,
             "timestamp": txn.get("time"),
         }
-        filter = {
-            "type": "INFLOW",
-            "address": address,
-            "txn_hash": txn.get("hash"),
-        }
-        col_famous_inoutflow_v2.replace_one(filter,row, upsert=True)
+        list_ios.append(item)
+
+    if len(existed_famous_address) > 0:
+        result_txn["famous_addresses"] = list(existed_famous_address)
+        list_txns.append(result_txn)
 
 def process_block(data):
     time.sleep(1)
@@ -269,9 +305,24 @@ def process_block(data):
     response = requests.get(f"https://blockchain.info/rawblock/{block}")
     result =  json.loads(response.text)
     # res = col_raw_block.replace_one({'block_index': result.get("block_index")}, result, upsert=True)
-    for txn in result.get("tx", []):
-        process_txn_v2(txn)
+    list_txns = []
+    list_ios = []
 
+    for txn in result.get("tx", []):
+        process_txn_v2(txn, list_txns, list_ios)
+
+    
+    if len(list_txns) > 0:
+        # start = datetime.now(pytz.UTC)
+        col_famous_address_txns_v2.insert_many(list_txns)
+        # end = datetime.now(pytz.UTC)
+        # print("col_famous_address_txns_v2.insert_many", (end-start).total_seconds())
+
+    if len(list_ios) > 0:
+        # start = datetime.now(pytz.UTC)
+        col_famous_inoutflow_v2.insert_many(list_ios)
+        # end = datetime.now(pytz.UTC)
+        # print("col_famous_inoutflow_v2.insert_many", (end-start).total_seconds())
 def test():
     process_famous_address({"address": "1Nh3EjhkiFJKKXXp3Htp1RCLvGrydsDXvh"})
 
