@@ -16,33 +16,26 @@ db = connection_database({
     'db_auth': "admin",
 })
 
-col_edge = db["edge"]
+col = db['feature_with_time']
 
 
 # load processed_address fro db and write into csv file
-with open('edges.csv','a') as file:
-    offset = 0
-    limit = 5000
-    group = 0
+with open('feature.csv','a') as file:
+    # write header
+    file.write("first_date_txn,last_date_txn,ath_outflow,lowest_outflow,ath_inflow,lowest_inflow,num_txns,mean_inflow,mean_outflow,address,label\n")
 
-    # init start id
-    start_item = list(col_edge.find({}).limit(1).skip(offset))[0]
-    last_id = start_item.get("_id")
+    offset = 0
+    limit = 50000
 
     while True:
+        res = list(col.find().skip(offset).limit(limit))
 
-        if offset > 8000000: 
+        if len(res) == 0:
             break
-
-        edges = list(col_edge.find({"_id": {"$gt": last_id}}).limit(limit))
-
-        if len(edges) == 0:
-            break
-        last_id = edges[len(edges)-1].get("_id")
-        for edge in edges:
-            del edge["_id"]
-
-            txt = '%s,%s\n' % (edge.get("address_in", ""), edge.get("address_out", ""))
+        
+        for item in res:
+            date_string = item.get("date").strftime("%m/%d/%Y")
+            txt = '%s,%s,%s,%d\n' % (item.get("address", ""), item.get("type", ""), date_string, item.get("amount", ""))
             file.write(txt)
 
         print(offset)

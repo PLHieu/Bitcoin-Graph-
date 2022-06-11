@@ -117,5 +117,11 @@ Có quá nhiều đỉnh + rời rạc lẫn nhau cho nên:
 
 
 
-1. Bật consumed queue block để nó tiếp tục được consumed
-2. 
+1. Bật consumed queue block để nó tiếp tục được consumed -> đợi cho consumed hết
+
+
+--------------------------------------------------------------------------------
+chạy file extract_graph_old_strategy.py để nó gom nhóm các address lại với nhau
+chạy file edge_inside_a_exchange.py để extract đồ thị giữa các group
+
+

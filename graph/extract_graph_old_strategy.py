@@ -30,9 +30,9 @@ db = connection_database({
 
 col_famous_address = db['famous_address']
 col_famous_address_txns_v2 = db['famous_address_txns_v2']
-col_map_add_group = db['map_add_group']
+col_map_add_group = db['map_add_group_latest']
 # col_map_group_group = db['map_group_group']
-col_group_index = db['group_index']
+# col_group_index = db['group_index']
 
 current_group_id = 1
 
@@ -55,7 +55,7 @@ def push_process_old_strategy_queue():
         queue.push_mgo_queue("process_old_strategy_queue", {"block": bl}, f"{bl}", [bl])
         print(bl)
 
-def process_old_strategy(block):
+def process_old_strategy(map_add_group, cache_map_add_label, map_group_addresses, block):
     # block = data.get("block")
 
     offset = 0
@@ -70,7 +70,7 @@ def process_old_strategy(block):
             break
         
         for txn in txns:
-            process_one_txn(txn)
+            process_one_txn(map_add_group, cache_map_add_label, map_group_addresses, txn)
         
         # print(offset)
         offset += limit
@@ -78,23 +78,23 @@ def process_old_strategy(block):
         last_id = txns[len(txns)-1].get("_id")
         filter["_id"] = {"$gt": last_id}
 
-def process_one_txn(txn):
+def process_one_txn(map_add_group, cache_map_add_label, map_group_addresses, txn):
     # if not check_coin_base_txn(txn):
     inputs = txn.get("inputs")
     outputs = txn.get("out")
 
     list_famous_adds = txn.get("famous_address",[])
 
-    process_inputs(list_famous_adds, inputs)
-    process_outputs(list_famous_adds, outputs)
+    process_inputs(map_add_group, cache_map_add_label, map_group_addresses, list_famous_adds, inputs)
+    process_outputs(map_add_group, cache_map_add_label, map_group_addresses, list_famous_adds, outputs)
 
 
 # each address in these inputs will be in the same group
-def process_inputs(list_famous_adds, inputs):
+def process_inputs(map_add_group, cache_map_add_label, map_group_addresses, list_famous_adds, inputs):
     global current_group_id 
-    global map_add_group 
-    global cache_map_add_label 
-    global map_group_addresses 
+    # global map_add_group 
+    # global cache_map_add_label 
+    # global map_group_addresses 
     
     is_already_get_new_gr_id = False
 
@@ -108,7 +108,7 @@ def process_inputs(list_famous_adds, inputs):
         if address not in list_famous_adds:
             continue
 
-        labeled_address = get_label_address(address)
+        labeled_address = get_label_address(cache_map_add_label, address)
 
         if not is_already_get_new_gr_id:
             new_group_id = current_group_id
@@ -162,11 +162,11 @@ def process_inputs(list_famous_adds, inputs):
 
 
 
-def process_outputs(list_famous_adds, outputs):
+def process_outputs(map_add_group, cache_map_add_label, map_group_addresses, list_famous_adds, outputs):
     global current_group_id 
-    global map_add_group 
-    global cache_map_add_label 
-    global map_group_addresses  
+    # global map_add_group 
+    # global cache_map_add_label 
+    # global map_group_addresses  
 
     for i in outputs:
         # t = threading.Thread(target=func, kwargs={"i": i})
@@ -184,7 +184,7 @@ def process_outputs(list_famous_adds, outputs):
         if address == "":
             continue
 
-        labeled_address = get_label_address(address)
+        labeled_address = get_label_address(cache_map_add_label, address)
         
         # -------------------------------------------------------------V2
         #get new group id
@@ -222,10 +222,10 @@ def process_outputs(list_famous_adds, outputs):
 
 
 
-def get_new_group_id():
-    current = col_group_index.find_one_and_update({"status": "current"}, {"$inc": {"index": 1}}, return_document=ReturnDocument.AFTER, upsert=True)
-    return current.get("index")
-
+# def get_new_group_id():
+#     current = col_group_index.find_one_and_update({"status": "current"}, {"$inc": {"index": 1}}, return_document=ReturnDocument.AFTER, upsert=True)
+#     return current.get("index")
+# 
 # def check_coin_base_txn(txn):
 #     input_address = txn.get("inputs")[0].get("prev_out").get("addr", "")
 #     if input_address == "":
@@ -244,17 +244,17 @@ def get_new_group_id():
 #             col_address.update_one({"address": address, "group": new_group_id_outputs}, {"$set": {}}, upsert=True)
 #         return True
 #     return False
-
-
+# 
+# 
 # def map(group_from, group_to):
 #     l = [group_from, group_to]
 #     l.sort()
-
+# 
 #     col_map_group_group.update_one({"group_from": l[0], "group_to": l[1]}, {"$set": {}}, upsert=True)
 
 
-def get_label_address(add):
-    global cache_map_add_label
+def get_label_address(cache_map_add_label, add):
+    # global cache_map_add_label
     a = cache_map_add_label.get(add)
     if a:
         return a
@@ -268,11 +268,13 @@ def get_label_address(add):
 # queue.consume_mgo_queue("process_old_strategy_queue", process_old_strategy)
 # push_process_old_strategy_queue()
 
-#2:47pm 5/15 -> 331938
-for i in range(119891, 428383):
+# 2:47pm 5/15 -> 331938
+# 2:50pm 29/5 -> 315556
+# 8:50am 30/5 -> 392285
+for i in range(119891, 550000):
     if received_signal:
         break
-    process_old_strategy(i)
+    process_old_strategy(map_add_group, cache_map_add_label, map_group_addresses, i)
     print(i)
 
 

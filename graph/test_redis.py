@@ -38,12 +38,16 @@ def add_all_famous_address():
 			break
 
 		for add in list_address:
-			r.sadd("famous_address", add.get("address"))
+			# r.sadd("famous_address", add.get("address"))
+			r.set(name=add.get("address"), value=add.get("label"))
 		print(offset)
 		offset = offset + limit
 
 
-is_memeber = r.sismember("famous_address", "1HqwgAJqqneUcxUUWKbhGiRADNWXwY9yYG")
+# is_memeber = r.sismember("famous_address", "1HqwgAJqqneUcxUUWKbhGiRADNWXwY9yYG")
 num_items = r.scard("famous_address")
 
 print(num_items)
+# add_all_famous_address()
+
+# print(r.get("1LDbBEqndip1dhPMszjT6n3CzuD768R5aR"))
