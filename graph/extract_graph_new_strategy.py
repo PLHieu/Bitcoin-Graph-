@@ -13,6 +13,19 @@ from mgoqueue import queue
 
 r = redis.Redis(host='localhost', port=6379, db=0)
 
+# received_signal = False
+
+# def signal_handler(signal, frame):
+#     global received_signal
+#     print("signal received", signal)
+#     received_signal = True
+
+# def handler_sigkill(signal, frame):
+#     print("KILL")
+
+# signal.signal(signal.SIGTSTP, signal_handler)
+# signal.signal(signal.SIGINT, handler_sigkill)
+
 db = connection_database({
     'db_user': "hieu",
     'db_pass': "password",
@@ -24,10 +37,7 @@ db = connection_database({
 
 col_famous_address = db['famous_address']
 col_famous_address_txns_v2 = db['famous_address_txns_v2']
-col_map_add_group = db['map_add_group_latest']
-# col_edges_grouping_graph = db['edges_grouping_graph']
 col_edges_grouping_graph_v2 = db['edges_grouping_graph_v2']
-col_grouping_add_graph = db['grouping_add_graph']
 
 
 def process_block(data):
@@ -136,79 +146,6 @@ def get_label_address(add):
     return res.get("label")
 
 
-def test_group_with_snap():
-    # load the graph into snap first
-    G = snap.TUNGraph.New()
-
-    offset = 0
-    limit = 1000000
-    upperbound = 1000000
-    
-    filter = {}
-    last_id = None
-
-    while True:
-        res = list(col_edges_grouping_graph_v2.find(filter).limit(limit))
-        if len(res) == 0:
-            break
-        
-        for edge in res:
-            from_node = edge.get("from_node")
-            to_node = edge.get("to_node")
-
-            if not G.IsNode(from_node):
-                G.AddNode(from_node)
-            
-            if not G.IsNode(to_node):
-                G.AddNode(to_node)
-
-            if from_node != to_node:
-                G.AddEdge(from_node, to_node)
-          
-        print(offset)
-        offset += limit
-        
-        # if offset >= upperbound:
-        #     break
-
-        last_id = res[len(res)-1].get("_id")
-        filter["_id"] = {"$gt": last_id}
-
-
-    Components = G.GetWccs()
-    # current_group_id = 0 
-    # for i in range(0, len(Components)):
-    #     # print(current_group_id, end=': ')
-    #     list_edges = []
-    #     for node in Components[i]:
-    #         # print(node, end=' ')
-    #         list_edges.append({"address": node, "group": current_group_id})
-    #     # print("")
-    #     col_grouping_add_graph.insert_many(list_edges)
-    #     print("Done group", current_group_id)
-    #     current_group_id = current_group_id + 1
-    
-    list_nodes_removed = []
-    
-    for i in range(0, len(Components)):
-        if i == 0:
-            print("Size of first component: %d" % Components[i].Len())
-            continue
-        
-        for node in Components[i]:
-            list_nodes_removed.append(node)
-    
-    # list_edges = []
-    # for node in Components[0]:
-    #     list_edges.append({"address": node})
-    # col_grouping_add_graph.insert_many(list_edges)
-
-    G.DelNodes(list_nodes_removed)   
-
-    G.PrintInfo()
-    G.SaveEdgeList('mygraph.txt')
-
-
 
 
 # queue.consume_mgo_queue("extract_graph_new_strategy_queue", process_block)
@@ -255,9 +192,4 @@ def load_processed_edge():
             queue.push_mgo_queue("queue_gget_node_label", data, node, [node])
 
 
-def test_address_existed_redis():
-    print(r.sismember("address_nodes", 1))
-
-
-load_processed_edge()
 
