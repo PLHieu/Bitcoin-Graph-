@@ -386,9 +386,18 @@ def thong_ke_mota():
         print("\\\\")
         print("\hline")
 
-thong_ke_mota()
+# thong_ke_mota()
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-p', '--partition', help="partition")
+    args = parser.parse_args()
 
 
+    if args.partition:
+        analytics_with_snap(args.partition)
+    else:
+        raise Exception("Arguments is invalid")
 
 
 

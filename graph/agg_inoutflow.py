@@ -9,7 +9,7 @@ import threading
 from bson.objectid import ObjectId
 
 sys.path.append(os.path.abspath(os.path.abspath(os.path.dirname("__file__"))))
-from utils.db import connection_database
+from utils.db import db
 from mgoqueue import queue
 # received_signal = False
 
@@ -23,14 +23,7 @@ from mgoqueue import queue
 
 # signal.signal(signal.SIGTERM, signal_handler)
 # signal.signal(signal.SIGINT, signal_handler)
-db = connection_database({
-    'db_user': "hieu",
-    'db_pass': "password",
-    'db_host': ["127.0.0.1"],
-    'port': "27017",
-    'db_name': "khoaluan",
-    'db_auth': "admin",
-})
+
 
 col_famous_address = db['famous_address']
 col_map_add_group = db['map_add_group']
@@ -519,3 +512,23 @@ def write_csv():
             offset = offset + limit
 
 # write_csv()
+
+def agg_all_inoutflow():
+    with open('processed_set_edges.csv','r') as file:
+        set_address = set()
+        # saved = load_saved()
+        for row in file:
+            row = row.strip('\n') 
+            pair_grs = row.split(',')
+            int_pair_grs = [ int(i) for i in pair_grs]
+
+            set_address.add(int_pair_grs[0])
+            set_address.add(int_pair_grs[1])
+
+
+        for label in set_address:
+            res = col_famous_address.find_one({"label": label})
+            add = res.get("address")
+            process_item({"address": add, "label": label})
+
+agg_all_inoutflow()

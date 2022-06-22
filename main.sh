@@ -12,3 +12,16 @@ unzip
 # then it will do some preprocessing for the graph, and output the final graph in processed_set_edges.csv
 ./graph/extract_graph_new_strategy.py -s 1 -e 550000 
 
+# aggregate the inoutflow of each address according to date
+./graph/agg_inoutflow.py
+
+# extract feature for each address
+extract/extract_feature.py
+
+# extract feature for each partition
+graph/analytics_with_snap.py -p 0
+graph/analytics_with_snap.py -p 1
+graph/analytics_with_snap.py -p 2
+graph/analytics_with_snap.py -p 3
+graph/analytics_with_snap.py -p 4
+graph/analytics_with_snap.py -p 5
