@@ -7,7 +7,7 @@ import signal
 import math
 
 sys.path.append(os.path.abspath(os.path.abspath(os.path.dirname("__file__"))))
-from utils.db import connection_database
+from utils.db import db
 from mgoqueue import queue
 
 
@@ -18,24 +18,12 @@ def signal_handler(signal, frame):
     print("signal received", signal)
     received_signal = True
 
-
 signal.signal(signal.SIGINT, signal_handler)
-
-db = connection_database({
-    'db_user': "hieu",
-    'db_pass': "password",
-    'db_host': ["127.0.0.1"],
-    'port': "27017",
-    'db_name': "khoaluan",
-    'db_auth': "admin",
-})
-
 col_famous_address = db['famous_address']
 col_famous_address_txns_v2 = db['famous_address_txns_v2']
 col_feature_with_time = db['feature_with_time']
 col_feature_partition = db['feature_partition']
 col_famous_inoutflow_v2 = db['famous_inoutflow_v2']
-
 
 def analytics_with_snap_big_graph():
     # # load the graph into snap first
@@ -96,7 +84,6 @@ def analytics_with_snap_big_graph():
             total = 0
             print(f'{from_}-{to}',sep=', ', end=', ')
         
-
 def get_set_address_by_partition(par):
     # load the graph from csv file 
     df = pd.read_csv("result_no_index.csv")
@@ -403,31 +390,5 @@ thong_ke_mota()
 
 
 
-# DegToCntV = G1.GetDegCnt()
-# for item in DegToCntV:
-#     # pass
-#     print("%d nodes with degree %d" % (item.GetVal2(), item.GetVal1()))
 
-
-# labels = {}
-# for NI in G1.Nodes():
-#     labels[NI.GetId()] = str(NI.GetId())
-# G1.DrawGViz(snap.gvlDot, "output.png", " ", labels)
-
-
-# print("start writing processed_set_edges.csv")
-# with open('processed_set_edges.csv','a') as file:
-#   with open('mygraph.txt', 'r') as read_obj:
-#       i = 0
-#       for row in read_obj:
-#           if i == 0 or i == 1 or i == 2:
-#               i = i+1
-#               continue
-#           row = row.strip('\n') 
-#           pair_grs = row.split('\t')
-#           int_pair_grs = [ int(i) for i in pair_grs]
-#           file.write(f"{int_pair_grs[0]},{int_pair_grs[1]}\n")
-
-#           i = i+1
-# print("done writing processed_set_edges.csv")
 

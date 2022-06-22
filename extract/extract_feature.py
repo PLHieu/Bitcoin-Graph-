@@ -86,7 +86,6 @@ def get_feature_group(group):
     features["last_block_txn"] = last_txn.get("block_index")
 
 
-
 # get feature for 1 address and return the dictionary feature 
 def get_feature_address(address):
     features = {}

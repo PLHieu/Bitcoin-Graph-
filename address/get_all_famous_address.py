@@ -5,9 +5,9 @@ import os
 import sys
 
 sys.path.append(os.path.abspath(os.path.abspath(os.path.dirname("__file__"))))
-from utils.db import db_khoaluan
+from utils.db import db
 
-col_famous_address = db_khoaluan['famous_address']
+col_famous_address = db['famous_address']
 
 type_map = {
     "address/Exchanges_full_detailed.csv": "exchange",
@@ -30,7 +30,27 @@ def run():
                 process_famous_address(row, type_add)
                 print(i)
                 i = i +1 
-            
+    
+    # label the address
+    offset = 0
+    limit = 5000
+    label = 1
+
+    while True:
+        list_address = list(
+            col_famous_address.find().skip(offset).limit(limit))
+
+        if len(list_address) == 0:
+            break
+
+        for add in list_address:
+            col_famous_address.find_one_and_update(
+                {"_id": add.get("_id")}, {"$set": {"label": label}})
+            label = label + 1
+
+        print(offset)
+
+        offset += limit
                 
 
 
@@ -63,9 +83,5 @@ def process_famous_address(item, type_add):
     filter = {"address":  row["address"], "type": type_add}
     col_famous_address.insert_one(row)
     # col_famous_address.replace_one(filter, row, upsert=True)
-
-def test():
-    a = list(col_famous_address.find({}).limit(100))
-    print(a)
 
 run()

@@ -19,7 +19,7 @@ def connection_database(config, collection=None, maxPoolSize=200):
     return db if collection is None else db[collection]
 
 
-db_khoaluan = connection_database({
+db = connection_database({
     'db_user': "hieu",
     'db_pass': "password",
     'db_host': ["127.0.0.1"],
